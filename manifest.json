@@ -1,0 +1,21 @@
+{
+  "name": "Youtube enchanted playlist",
+  "version": "1.0",
+  "description": "A leightweight yourube playlist handler",
+  "permissions": ["activeTab", "declarativeContent", "storage", "tabs", "unlimitedStorage"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://www.youtube.com/*", "https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "manifest_version": 2
+}
