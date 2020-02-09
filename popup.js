@@ -92,6 +92,7 @@ nextButton.onclick = element => {
     const videoId = tab.url.match(/watch\?v=(.{11})/)[1];
     if (remainingVideos) {
       remainingVideos = remainingVideos.filter(video => video.id !== videoId);
+      if (remainingVideos.length === 0) remainingVideos = playlist.videos;
       const next = Math.floor(Math.random() * remainingVideos.length);
       chrome.tabs.update(playlist.tabId, {
         url: `https://www.youtube.com/watch?v=${remainingVideos[next].id}&list=${playlist.id}`

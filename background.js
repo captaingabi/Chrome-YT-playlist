@@ -4,7 +4,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const playlist = result.playlist;
       const videoId = sender.tab.url.match(/watch\?v=(.{11})/)[1];
       if (result.remainingVideos) {
-        const remainingVideos = result.remainingVideos.filter(video => video.id !== videoId);
+        let remainingVideos = result.remainingVideos.filter(video => video.id !== videoId);
+        if (remainingVideos.length === 0) remainingVideos = playlist.videos;
         const next = Math.floor(Math.random() * remainingVideos.length);
         chrome.tabs.update(playlist.tabId, {
           url: `https://www.youtube.com/watch?v=${remainingVideos[next].id}&list=${playlist.id}`
