@@ -1,34 +1,42 @@
 let previousButton = document.getElementById('previousButton');
 let nextButton = document.getElementById('nextButton');
-let playListLU = document.getElementById('playListLU');
-let videoElement = document.querySelector('video');
+let playListDiv = document.getElementById('playListDiv');
 let playlist = [];
 
-function updatePlayListLU() {
-  playListLU.innerHTML = '';
-  h1 = document.createElement('H1');
+function updatePlayListDiv(currentVideoId, playlist) {
+  playListDiv.innerHTML = '';
+  const h1 = document.createElement('H1');
   h1.appendChild(
     document.createTextNode(playlist.title + ' (' + playlist.videos.length + ' videos)')
   );
-  playListLU.appendChild(h1);
+  playListDiv.appendChild(h1);
+  const ul = document.createElement('ul');
   playlist.videos.forEach(video => {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
     a.innerHTML = video.title;
+    if (currentVideoId === video.id) a.style = 'color:red';
     a.onclick = () => {
       chrome.tabs.update(playlist.tabId, {
         url: `https://www.youtube.com/watch?v=${video.id}&list=${playlist.id}`
       });
+      updatePlayListDiv(video.id, playlist);
     };
     li.appendChild(a);
-    playListLU.appendChild(li);
+    ul.appendChild(li);
   });
+  playListDiv.appendChild(ul);
 }
 
 chrome.storage.local.get('playlist', result => {
-  if (result.playlist) playlist = result.playlist;
-  updatePlayListLU();
+  if (result.playlist) {
+    playlist = result.playlist;
+    chrome.tabs.get(playlist.tabId, tab => {
+      const currentVideoId = tab.url.match(/watch\?v=(.{11})/)[1];
+      updatePlayListDiv(currentVideoId, playlist);
+    });
+  }
 });
 
 previousButton.onclick = element => {
@@ -41,6 +49,7 @@ previousButton.onclick = element => {
     chrome.tabs.update(playlist.tabId, {
       url: `https://www.youtube.com/watch?v=${playlist.videos[prev].id}&list=${playlist.id}`
     });
+    updatePlayListDiv(playlist.videos[prev].id, playlist);
   });
 };
 
@@ -53,5 +62,12 @@ nextButton.onclick = element => {
     chrome.tabs.update(playlist.tabId, {
       url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
     });
+    updatePlayListDiv(playlist.videos[next].id, playlist);
   });
 };
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.msg === 'refresh_playlist') {
+    updatePlayListDiv(request.videoId, playlist);
+  }
+});

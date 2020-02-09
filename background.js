@@ -10,6 +10,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tabs.update(playlist.tabId, {
         url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
       });
+      chrome.runtime.sendMessage({ msg: 'refresh_playlist', videoId: playlist.videos[next].id });
     }
   });
 });
