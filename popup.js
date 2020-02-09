@@ -1,9 +1,24 @@
 let previousButton = document.getElementById('previousButton');
 let nextButton = document.getElementById('nextButton');
-let playListDiv = document.getElementById('playListDiv');
+let RandomDiv = document.getElementById('RandomDiv');
+let randomInput = document.getElementById('randomInput');
+let randomLabel = document.getElementById('randomLabel');
 let playlist = [];
+let remainingVideos = null;
 
-function updatePlayListDiv(currentVideoId, playlist) {
+const updateRandomDiv = () => {
+  if (remainingVideos) {
+    randomLabel.innerHTML = `${remainingVideos.length} videos remaining`;
+    randomInput.checked = true;
+    previousButton.disabled = true;
+  } else {
+    randomLabel.innerHTML = '';
+    randomInput.checked = false;
+    previousButton.disabled = false;
+  }
+};
+
+const updatePlayListDiv = (currentVideoId, playlist) => {
   playListDiv.innerHTML = '';
   const h1 = document.createElement('H1');
   h1.appendChild(
@@ -27,7 +42,7 @@ function updatePlayListDiv(currentVideoId, playlist) {
     ul.appendChild(li);
   });
   playListDiv.appendChild(ul);
-}
+};
 
 chrome.storage.local.get('playlist', result => {
   if (result.playlist) {
@@ -35,6 +50,25 @@ chrome.storage.local.get('playlist', result => {
     chrome.tabs.get(playlist.tabId, tab => {
       const currentVideoId = tab.url.match(/watch\?v=(.{11})/)[1];
       updatePlayListDiv(currentVideoId, playlist);
+    });
+  }
+});
+
+chrome.storage.local.get('remainingVideos', result => {
+  if (result.remainingVideos) {
+    remainingVideos = result.remainingVideos;
+    updateRandomDiv();
+  }
+});
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.msg === 'refresh_playlist') {
+    updatePlayListDiv(request.videoId, playlist);
+    chrome.storage.local.get('remainingVideos', result => {
+      if (result.remainingVideos) {
+        remainingVideos = result.remainingVideos;
+        updateRandomDiv();
+      }
     });
   }
 });
@@ -56,18 +90,36 @@ previousButton.onclick = element => {
 nextButton.onclick = element => {
   chrome.tabs.get(playlist.tabId, tab => {
     const videoId = tab.url.match(/watch\?v=(.{11})/)[1];
-    const next =
-      (Number(playlist.videos.findIndex(video => video.id === videoId)) + 1) %
-      playlist.videos.length;
-    chrome.tabs.update(playlist.tabId, {
-      url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
-    });
-    updatePlayListDiv(playlist.videos[next].id, playlist);
+    if (remainingVideos) {
+      remainingVideos = remainingVideos.filter(video => video.id !== videoId);
+      const next = Math.floor(Math.random() * remainingVideos.length);
+      chrome.tabs.update(playlist.tabId, {
+        url: `https://www.youtube.com/watch?v=${remainingVideos[next].id}&list=${playlist.id}`
+      });
+      chrome.storage.local.set({ remainingVideos }, () => {
+        updatePlayListDiv(remainingVideos[next].id, playlist);
+        updateRandomDiv();
+      });
+    } else {
+      const next =
+        (Number(playlist.videos.findIndex(video => video.id === videoId)) + 1) %
+        playlist.videos.length;
+      chrome.tabs.update(playlist.tabId, {
+        url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
+      });
+      updatePlayListDiv(playlist.videos[next].id, playlist);
+    }
   });
 };
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.msg === 'refresh_playlist') {
-    updatePlayListDiv(request.videoId, playlist);
+randomInput.onclick = event => {
+  playlist.random = event.target.checked;
+  if (event.target.checked) {
+    remainingVideos = playlist.videos;
+  } else {
+    remainingVideos = null;
   }
-});
+  chrome.storage.local.set({ remainingVideos }, () => {
+    updateRandomDiv();
+  });
+};

@@ -1,16 +1,32 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  chrome.storage.local.get('playlist', result => {
-    let playlist = [];
+  chrome.storage.local.get(['remainingVideos', 'playlist'], result => {
     if (result.playlist) {
-      playlist = result.playlist;
+      const playlist = result.playlist;
       const videoId = sender.tab.url.match(/watch\?v=(.{11})/)[1];
-      const next =
-        (Number(playlist.videos.findIndex(video => video.id === videoId)) + 1) %
-        playlist.videos.length;
-      chrome.tabs.update(playlist.tabId, {
-        url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
-      });
-      chrome.runtime.sendMessage({ msg: 'refresh_playlist', videoId: playlist.videos[next].id });
+      if (result.remainingVideos) {
+        const remainingVideos = result.remainingVideos.filter(video => video.id !== videoId);
+        const next = Math.floor(Math.random() * remainingVideos.length);
+        chrome.tabs.update(playlist.tabId, {
+          url: `https://www.youtube.com/watch?v=${remainingVideos[next].id}&list=${playlist.id}`
+        });
+        chrome.storage.local.set({ remainingVideos }, () => {
+          chrome.runtime.sendMessage({
+            msg: 'refresh_playlist',
+            videoId: remainingVideos[next].id
+          });
+        });
+      } else {
+        const next =
+          (Number(playlist.videos.findIndex(video => video.id === videoId)) + 1) %
+          playlist.videos.length;
+        chrome.tabs.update(playlist.tabId, {
+          url: `https://www.youtube.com/watch?v=${playlist.videos[next].id}&list=${playlist.id}`
+        });
+        chrome.runtime.sendMessage({
+          msg: 'refresh_playlist',
+          videoId: playlist.videos[next].id
+        });
+      }
     }
   });
 });
@@ -19,14 +35,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status == 'complete') {
     let re = /https?:\/\/www.youtube.com\/watch\?v=.{11}&list=*/;
     if (tab.url.match(re)) {
-      let xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
       xhr.open('GET', tab.url, true);
       xhr.onreadystatechange = () => {
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-          re = /window\["ytInitialData"\] = .*;\n/g;
-          let json = xhr.response.match(re)[0].slice(26, -2);
-          let response = JSON.parse(json);
-          let playlist = {
+          re = /window\["ytInitialData"\] = (.*);\n/;
+          const json = xhr.response.match(re)[1];
+          const response = JSON.parse(json);
+          const playlist = {
             tabId: tabId,
             id: response.contents.twoColumnWatchNextResults.playlist.playlist.playlistId,
             title: response.contents.twoColumnWatchNextResults.playlist.playlist.title,
@@ -34,9 +50,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
               content => {
                 return {
                   id: content.playlistPanelVideoRenderer.videoId,
-                  title: content.playlistPanelVideoRenderer.title.simpleText,
-                  lengthText: content.playlistPanelVideoRenderer.lengthText.simpleText,
-                  thumbnail: content.playlistPanelVideoRenderer.thumbnail.thumbnails[0].url
+                  title: content.playlistPanelVideoRenderer.title.simpleText
                 };
               }
             )
