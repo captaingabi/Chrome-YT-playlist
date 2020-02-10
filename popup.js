@@ -3,6 +3,8 @@ let previousButton = document.getElementById('previousButton');
 let nextButton = document.getElementById('nextButton');
 let randomInput = document.getElementById('randomInput');
 let randomLabel = document.getElementById('randomLabel');
+const playSvgPath = 'M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z';
+const pauseSvgPath = 'M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z';
 
 const updateRandomDiv = rndVIDs => {
   if (rndVIDs) {
@@ -62,12 +64,16 @@ chrome.runtime.onMessage.addListener(request => {
     updateRandomDiv(request.runtime.rndVIDs);
   }
   if (request.msg === 'refresh_play_state') {
-    playButton.innerHTML = request.state;
+    playButton.state = request.state;
+    playButton
+      .getElementsByTagName('svg')[0]
+      .getElementsByTagName('path')[0]
+      .setAttribute('d', playButton.state === 'Play' ? playSvgPath : pauseSvgPath);
   }
 });
 
 playButton.onclick = event => {
-  chrome.runtime.sendMessage({ msg: 'play_pause', state: event.target.innerHTML });
+  chrome.runtime.sendMessage({ msg: 'play_pause', state: playButton.state });
 };
 
 previousButton.onclick = event => {
