@@ -1,9 +1,10 @@
+let playButton = document.getElementById('playButton');
 let previousButton = document.getElementById('previousButton');
 let nextButton = document.getElementById('nextButton');
 let randomInput = document.getElementById('randomInput');
 let randomLabel = document.getElementById('randomLabel');
 
-const updateRandomDiv = (rndVIDs) => {
+const updateRandomDiv = rndVIDs => {
   if (rndVIDs) {
     randomLabel.innerHTML = `${rndVIDs.length} videos remaining`;
     randomInput.checked = true;
@@ -40,11 +41,11 @@ const updatePlayListDiv = (currentVID, playlist) => {
 };
 
 const updatePlayingInPlaylistDiv = (prevVID, currentVID) => {
-  if(prevVID) {
+  if (prevVID) {
     const prevA = document.getElementById(prevVID + 'A');
     prevA.style = 'color:blue';
   }
-  if(currentVID) {
+  if (currentVID) {
     const nowA = document.getElementById(currentVID + 'A');
     nowA.style = 'color:red';
   }
@@ -60,13 +61,20 @@ chrome.runtime.onMessage.addListener(request => {
   if (request.msg === 'refresh_remaining_video') {
     updateRandomDiv(request.runtime.rndVIDs);
   }
+  if (request.msg === 'refresh_play_state') {
+    playButton.innerHTML = request.state;
+  }
 });
 
-previousButton.onclick = element => {
+playButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'play_pause', state: event.target.innerHTML });
+};
+
+previousButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_prev' });
 };
 
-nextButton.onclick = element => {
+nextButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_next' });
 };
 
