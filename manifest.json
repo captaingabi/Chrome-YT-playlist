@@ -12,7 +12,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://www.youtube.com/*", "https://www.youtube.com/*"],
+      "matches": ["http://www.youtube.com/watch?v=*", "https://www.youtube.com/watch?v=*"],
       "js": ["content.js"],
       "run_at": "document_end"
     }

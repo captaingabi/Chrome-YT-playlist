@@ -53,6 +53,13 @@ const updatePlayingInPlaylistDiv = (prevVID, currentVID) => {
   }
 };
 
+const noPlaylistDiv = message => {
+  playListDiv.innerHTML = '';
+  const h1 = document.createElement('H1');
+  h1.appendChild(document.createTextNode(message));
+  playListDiv.appendChild(h1);
+};
+
 chrome.runtime.onMessage.addListener(request => {
   if (request.msg === 'refresh_playlist') {
     updatePlayListDiv(request.runtime.currentVID, request.playlist);
@@ -64,11 +71,18 @@ chrome.runtime.onMessage.addListener(request => {
     updateRandomDiv(request.runtime.rndVIDs);
   }
   if (request.msg === 'refresh_play_state') {
+    playButton.disabled = request.disabled ? true : false;
     playButton.state = request.state;
     playButton
       .getElementsByTagName('svg')[0]
       .getElementsByTagName('path')[0]
       .setAttribute('d', playButton.state === 'Play' ? playSvgPath : pauseSvgPath);
+  }
+  if (request.msg === 'no_playlist_present') {
+    noPlaylistDiv('PLease open a tab with youtube playlist');
+  }
+  if (request.msg === 'playlist_loading') {
+    noPlaylistDiv('Loading playlist ...');
   }
 });
 
