@@ -10,15 +10,19 @@ const playlistRegExp = /https?:\/\/www.youtube.com\/watch\?v=(.{11})&list=*/;
 const playlistHTMLRegExp = /window\["ytInitialData"\] = (.*);\n/;
 
 const refreshURL = () => {
-  chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: 'Pause', disabled: true });
-  chrome.tabs.update(
-    runtime.tabId,
-    {
-      url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${playlist.id}`
-    },
-    tab => {
-      chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
-      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+  chrome.runtime.sendMessage(
+    { msg: 'refresh_play_state', state: 'Pause', disabled: true },
+    response => {
+      chrome.tabs.update(
+        runtime.tabId,
+        {
+          url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${playlist.id}`
+        },
+        tab => {
+          chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
+          chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+        }
+      );
     }
   );
 };
@@ -74,10 +78,14 @@ chrome.runtime.onMessage.addListener(request => {
       });
     }
     if (request.msg === 'refresh_request') {
-      chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime, playlist });
-      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
-      chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-        chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
+      chrome.tabs.get(runtime.tabId, tab => {
+        if (tab) {
+          chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime, playlist });
+          chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+          chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
+            chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
+          });
+        }
       });
     }
   } else {
@@ -108,11 +116,10 @@ const importPlayist = url => {
           }
         )
       };
+      chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: 'Pause' });
       if (runtime.loading) {
         runtime.loading = false;
-        chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: 'Pause' });
         chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime, playlist });
-        chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
       }
     }
   };
@@ -120,17 +127,17 @@ const importPlayist = url => {
 };
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status == 'complete') {
-    const match = tab.url.match(playlistRegExp);
-    if (match) {
+  const match = tab.url.match(playlistRegExp);
+  if (match) {
+    if (changeInfo.status == 'complete') {
       importPlayist(tab.url);
       runtime.currentVID = match[1];
       runtime.tabId = tabId;
     }
-  }
-  if (changeInfo.status == 'loading' && !playlist) {
-    runtime.loading = true;
-    chrome.runtime.sendMessage({ msg: 'playlist_loading', runtime });
+    if (changeInfo.status == 'loading' && !playlist) {
+      runtime.loading = true;
+      chrome.runtime.sendMessage({ msg: 'playlist_loading', runtime });
+    }
   }
 });
 

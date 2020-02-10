@@ -60,7 +60,8 @@ const noPlaylistDiv = message => {
   playListDiv.appendChild(h1);
 };
 
-chrome.runtime.onMessage.addListener(request => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log(request);
   if (request.msg === 'refresh_playlist') {
     updatePlayListDiv(request.runtime.currentVID, request.playlist);
   }
@@ -77,6 +78,7 @@ chrome.runtime.onMessage.addListener(request => {
       .getElementsByTagName('svg')[0]
       .getElementsByTagName('path')[0]
       .setAttribute('d', playButton.state === 'Play' ? playSvgPath : pauseSvgPath);
+    sendResponse();
   }
   if (request.msg === 'no_playlist_present') {
     noPlaylistDiv('PLease open a tab with youtube playlist');
