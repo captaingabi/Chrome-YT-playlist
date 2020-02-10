@@ -6,7 +6,6 @@ chrome.storage.local.get('playlist', result => {
 });
 
 const refreshURL = () => {
-  runtime.tabId = undefined;
   chrome.tabs.update(
     runtime.tabId,
     {
@@ -18,6 +17,7 @@ const refreshURL = () => {
       chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: 'Pause' });
     }
   );
+  runtime.tabId = undefined;
 };
 
 const playRandom = () => {
