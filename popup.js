@@ -121,7 +121,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse();
   }
   if (request.msg === 'refresh_volume') {
-    volumeInput.value = request.volume;
+    volumeInput.disabled = request.disabled ? true : false;
+    if (request.volume) volumeInput.value = request.volume;
+    sendResponse();
     updateVolumeSliderShadow();
   }
   if (request.msg === 'no_playlist_present') {

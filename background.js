@@ -17,17 +17,19 @@ const refreshURL = () => {
   chrome.runtime.sendMessage(
     { msg: 'refresh_play_state', state: 'Pause', disabled: true },
     response => {
-      chrome.tabs.update(
-        runtime.tabId,
-        {
-          url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
-        },
-        tab => {
-          runtime.tabId = tab.id;
-          chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
-          chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
-        }
-      );
+      chrome.runtime.sendMessage({ msg: 'refresh_volume', disabled: true }, response => {
+        chrome.tabs.update(
+          runtime.tabId,
+          {
+            url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
+          },
+          tab => {
+            runtime.tabId = tab.id;
+            chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
+            chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+          }
+        );
+      });
     }
   );
 };
