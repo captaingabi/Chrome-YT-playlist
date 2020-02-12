@@ -66,29 +66,14 @@ const noPlaylistDiv = message => {
   playListDiv.appendChild(h1);
 };
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.msg === 'refresh_playlist') {
-    updatePlayListDiv(request.runtime.currentVID, request.runtime.playlist);
-  }
-  if (request.msg === 'refresh_playing') {
-    updatePlayingInPlaylistDiv(request.runtime.prevVID, request.runtime.currentVID);
-  }
-  if (request.msg === 'refresh_remaining_video') {
-    updateRandomDiv(request.runtime.rndVIDs);
-  }
-  if (request.msg === 'refresh_play_state') {
-    playButton.disabled = request.disabled ? true : false;
-    playButton.state = request.state;
-    playButton.className = playButton.state === 'Play' ? 'play-button' : 'pause-button';
-    sendResponse();
-  }
-  if (request.msg === 'no_playlist_present') {
-    noPlaylistDiv('PLease open a tab with youtube playlist and click import');
-  }
-  if (request.msg === 'playlist_loading') {
-    noPlaylistDiv('Importing playlist. Please wait ...');
-  }
-});
+const updateVolumeSliderShadow = () => {
+  volumeInput.style.background =
+    'linear-gradient(to right, #ff8080 0%, #ff8080 ' +
+    volumeInput.value * 100 +
+    '%, #ccc ' +
+    volumeInput.value * 100 +
+    '%, #ccc 100%)';
+};
 
 importButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'import_playlist' });
@@ -105,13 +90,10 @@ previousButton.onclick = event => {
 nextButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_next' });
 };
+
 volumeInput.oninput = () => {
-  volumeInput.style.background =
-    'linear-gradient(to right, #ff8080 0%, #ff8080 ' +
-    volumeInput.value +
-    '%, #ccc ' +
-    volumeInput.value +
-    '%, #ccc 100%)';
+  updateVolumeSliderShadow();
+  chrome.runtime.sendMessage({ msg: 'set_volume', volume: volumeInput.value });
 };
 
 randomInput.onclick = event => {
@@ -121,5 +103,33 @@ randomInput.onclick = event => {
     chrome.runtime.sendMessage({ msg: 'randomize', randomize: false });
   }
 };
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.msg === 'refresh_playlist') {
+    updatePlayListDiv(request.runtime.currentVID, request.runtime.playlist);
+  }
+  if (request.msg === 'refresh_playing') {
+    updatePlayingInPlaylistDiv(request.runtime.prevVID, request.runtime.currentVID);
+  }
+  if (request.msg === 'refresh_remaining_video') {
+    updateRandomDiv(request.runtime.rndVIDs);
+  }
+  if (request.msg === 'refresh_play_state') {
+    playButton.disabled = request.disabled ? true : false;
+    playButton.state = request.state;
+    playButton.className = playButton.state === 'Play' ? 'play-button' : 'pause-button';
+    sendResponse();
+  }
+  if (request.msg === 'refresh_volume') {
+    volumeInput.value = request.volume;
+    updateVolumeSliderShadow();
+  }
+  if (request.msg === 'no_playlist_present') {
+    noPlaylistDiv('PLease open a tab with youtube playlist and click import');
+  }
+  if (request.msg === 'playlist_loading') {
+    noPlaylistDiv('Importing playlist. Please wait ...');
+  }
+});
 
 chrome.runtime.sendMessage({ msg: 'refresh_request' });

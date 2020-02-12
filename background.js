@@ -10,10 +10,7 @@ const playlistRegExp = /(https?:\/\/www.youtube.com\/watch\?v=(.{11})&list=(.*))
 const playlistHTMLRegExp = /window\["ytInitialData"\] = (.*);\n/;
 
 chrome.storage.local.get('playlist', result => {
-  console.log(result);
-  if (result) {
-    runtime.playlist = result.playlist;
-  }
+  if (result) runtime.playlist = result.playlist;
 });
 
 const refreshURL = () => {
@@ -33,6 +30,15 @@ const refreshURL = () => {
       );
     }
   );
+};
+
+const refreshVideoState = () => {
+  chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_volume' }, response => {
+    chrome.runtime.sendMessage({ msg: 'refresh_volume', volume: response.volume });
+  });
+  chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
+    chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
+  });
 };
 
 const playRandom = () => {
@@ -92,9 +98,7 @@ const importPlayistChunk = (playlistId, videoId) => {
           if (runtime.loading) {
             runtime.loading = false;
             chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime });
-            chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-              chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-            });
+            refreshVideoState();
           }
           chrome.storage.local.set({ playlist: runtime.playlist }, () => {});
         }
@@ -164,9 +168,12 @@ chrome.runtime.onMessage.addListener(request => {
     if (request.msg === 'play_exact') {
       playExact(request.videoId);
     }
-    if (request.msg === 'randomize') {
-      runtime.rndVIDs = request.randomize ? runtime.playlist.videos : undefined;
-      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+    if (request.msg === 'set_volume') {
+      if (runtime.tabId) {
+        chrome.tabs.sendMessage(runtime.tabId, request, response => {
+          chrome.runtime.sendMessage({ msg: 'refresh_volume', volume: response.volume });
+        });
+      }
     }
     if (request.msg === 'play_pause') {
       if (runtime.tabId) {
@@ -175,16 +182,16 @@ chrome.runtime.onMessage.addListener(request => {
         });
       }
     }
+    if (request.msg === 'randomize') {
+      runtime.rndVIDs = request.randomize ? runtime.playlist.videos : undefined;
+      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+    }
     if (request.msg === 'refresh_request') {
       chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime });
       chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
       if (runtime.tabId) {
         chrome.tabs.get(runtime.tabId, tab => {
-          if (tab && tab.status === 'complete') {
-            chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-              chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-            });
-          }
+          if (tab && tab.status === 'complete') refreshVideoState();
         });
       }
     }
@@ -194,11 +201,7 @@ chrome.runtime.onMessage.addListener(request => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === runtime.tabId && changeInfo.status === 'complete') {
-    chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-      chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-    });
-  }
+  if (tabId === runtime.tabId && changeInfo.status === 'complete') refreshVideoState();
 });
 
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {

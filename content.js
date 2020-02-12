@@ -13,4 +13,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'get_play_state') {
     sendResponse({ msg: request.msg, state: videoElement.paused ? 'Play' : 'Pause' });
   }
+  if (request.msg === 'set_volume') {
+    videoElement.volume = request.volume;
+    sendResponse({ msg: request.msg, volume: videoElement.volume });
+  }
+  if (request.msg === 'get_volume') {
+    sendResponse({ msg: request.msg, volume: videoElement.volume });
+  }
 });
