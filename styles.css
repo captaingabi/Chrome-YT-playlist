@@ -8,26 +8,19 @@ li {
   white-space: nowrap;
 }
 
+.tile {
+  width: 240px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.importButton {
+  background-color: red;
+  color: white;
+}
+
 .button svg {
   fill: red;
-}
-
-.buttons {
-  width: 240px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-.randomizer {
-  width: 240px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-.playlist {
-  width: 240px;
-  margin-top: 5px;
-  margin-bottom: 5px;
 }
 
 /* The switch - the box around the slider */

@@ -1,8 +1,9 @@
-let playButton = document.getElementById('playButton');
-let previousButton = document.getElementById('previousButton');
-let nextButton = document.getElementById('nextButton');
-let randomInput = document.getElementById('randomInput');
-let randomLabel = document.getElementById('randomLabel');
+const importButton = document.getElementById('importButton');
+const playButton = document.getElementById('playButton');
+const previousButton = document.getElementById('previousButton');
+const nextButton = document.getElementById('nextButton');
+const randomInput = document.getElementById('randomInput');
+const randomLabel = document.getElementById('randomLabel');
 const playSvgPath = 'M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z';
 const pauseSvgPath = 'M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z';
 
@@ -62,7 +63,7 @@ const noPlaylistDiv = message => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'refresh_playlist') {
-    updatePlayListDiv(request.runtime.currentVID, request.playlist);
+    updatePlayListDiv(request.runtime.currentVID, request.runtime.playlist);
   }
   if (request.msg === 'refresh_playing') {
     updatePlayingInPlaylistDiv(request.runtime.prevVID, request.runtime.currentVID);
@@ -80,12 +81,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse();
   }
   if (request.msg === 'no_playlist_present') {
-    noPlaylistDiv('PLease open a tab with youtube playlist');
+    noPlaylistDiv('PLease open a tab with youtube playlist and click import');
   }
   if (request.msg === 'playlist_loading') {
-    noPlaylistDiv('Loading playlist ...');
+    noPlaylistDiv('Importing playlist. Please wait ...');
   }
 });
+
+importButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'import_playlist' });
+};
 
 playButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_pause', state: playButton.state });
