@@ -2,6 +2,7 @@ const importButton = document.getElementById('importButton');
 const playButton = document.getElementById('playButton');
 const previousButton = document.getElementById('previousButton');
 const nextButton = document.getElementById('nextButton');
+const volumeInput = document.getElementById('volumeInput');
 const randomInput = document.getElementById('randomInput');
 const randomLabel = document.getElementById('randomLabel');
 const playSvgPath = 'M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z';
@@ -108,6 +109,14 @@ previousButton.onclick = event => {
 
 nextButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_next' });
+};
+volumeInput.oninput = () => {
+  volumeInput.style.background =
+    'linear-gradient(to right, #ff8080 0%, #ff8080 ' +
+    volumeInput.value +
+    '%, #ccc ' +
+    volumeInput.value +
+    '%, #ccc 100%)';
 };
 
 randomInput.onclick = event => {
