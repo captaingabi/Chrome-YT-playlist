@@ -1,8 +1,40 @@
-.import-button {
-  background-color: red;
-  color: white;
+.previous-button {
+  background: url(../SVG/previous.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
 }
 
-.video-control-button svg {
-  fill: red;
+.play-button {
+  background: url(../SVG/play.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+.next-button {
+  background: url(../SVG/next.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+.pause-button {
+  background: url(../SVG/pause.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+.import-button {
+  background: url(../SVG/import.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 80px;
+  margin-left: 70px;
 }

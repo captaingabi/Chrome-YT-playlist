@@ -4,17 +4,15 @@ const previousButton = document.getElementById('previousButton');
 const nextButton = document.getElementById('nextButton');
 const volumeInput = document.getElementById('volumeInput');
 const randomInput = document.getElementById('randomInput');
-const randomLabel = document.getElementById('randomLabel');
-const playSvgPath = 'M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z';
-const pauseSvgPath = 'M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z';
+const randomizeLabel = document.getElementById('randomizeLabel');
 
 const updateRandomDiv = rndVIDs => {
   if (rndVIDs) {
-    randomLabel.innerHTML = `${rndVIDs.length} videos remaining`;
+    randomizeLabel.innerHTML = `Randomize: ${rndVIDs.length} videos remaining`;
     randomInput.checked = true;
     previousButton.disabled = true;
   } else {
-    randomLabel.innerHTML = '';
+    randomizeLabel.innerHTML = 'Randomize';
     randomInput.checked = false;
     previousButton.disabled = false;
   }
@@ -81,10 +79,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'refresh_play_state') {
     playButton.disabled = request.disabled ? true : false;
     playButton.state = request.state;
-    playButton
-      .getElementsByTagName('svg')[0]
-      .getElementsByTagName('path')[0]
-      .setAttribute('d', playButton.state === 'Play' ? playSvgPath : pauseSvgPath);
+    playButton.className = playButton.state === 'Play' ? 'play-button' : 'pause-button';
     sendResponse();
   }
   if (request.msg === 'no_playlist_present') {

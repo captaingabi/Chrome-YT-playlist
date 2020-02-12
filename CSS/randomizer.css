@@ -1,3 +1,8 @@
+.randomize-label {
+  margin-left: 5px;
+  font-weight: bold;
+}
+
 .switch {
   position: relative;
   display: inline-block;
