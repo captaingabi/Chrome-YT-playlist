@@ -6,7 +6,7 @@ let runtime = {
   rndVIDs: undefined,
   loading: false
 };
-const playlistRegExp = /https?:\/\/www.youtube.com\/watch\?v=(.{11})&list=*/;
+const playlistRegExp = /(https?:\/\/www.youtube.com\/watch\?v=(.{11})&list=(.*))&?/;
 const playlistHTMLRegExp = /window\["ytInitialData"\] = (.*);\n/;
 
 const refreshURL = () => {
@@ -82,9 +82,11 @@ chrome.runtime.onMessage.addListener(request => {
         if (tab) {
           chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime, playlist });
           chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
-          chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-            chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-          });
+          if (tab.status === 'complete') {
+            chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
+              chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
+            });
+          }
         }
       });
     }
@@ -107,13 +109,19 @@ const importPlayist = url => {
       playlist = {
         id: response.contents.twoColumnWatchNextResults.playlist.playlist.playlistId,
         title: response.contents.twoColumnWatchNextResults.playlist.playlist.title,
-        videos: response.contents.twoColumnWatchNextResults.playlist.playlist.contents.map(
-          content => {
-            return {
-              id: content.playlistPanelVideoRenderer.videoId,
-              title: content.playlistPanelVideoRenderer.title.simpleText
-            };
-          }
+        videos: response.contents.twoColumnWatchNextResults.playlist.playlist.contents.reduce(
+          (result, content) => {
+            if (
+              content.playlistPanelVideoRenderer.videoId &&
+              content.playlistPanelVideoRenderer.title
+            )
+              result.push({
+                id: content.playlistPanelVideoRenderer.videoId,
+                title: content.playlistPanelVideoRenderer.title.simpleText
+              });
+            return result;
+          },
+          []
         )
       };
       chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: 'Pause' });
@@ -129,9 +137,9 @@ const importPlayist = url => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   const match = tab.url.match(playlistRegExp);
   if (match) {
-    if (changeInfo.status == 'complete') {
+    if (changeInfo.status === 'complete') {
       importPlayist(tab.url);
-      runtime.currentVID = match[1];
+      runtime.currentVID = match[2];
       runtime.tabId = tabId;
     }
     if (changeInfo.status == 'loading' && !playlist) {

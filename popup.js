@@ -61,7 +61,6 @@ const noPlaylistDiv = message => {
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(request);
   if (request.msg === 'refresh_playlist') {
     updatePlayListDiv(request.runtime.currentVID, request.playlist);
   }
