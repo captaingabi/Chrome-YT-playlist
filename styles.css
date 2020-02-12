@@ -1,6 +1,8 @@
 ul {
   list-style: none;
   padding-left: 10px;
+  height: 400px;
+  overflow: auto;
 }
 li {
   overflow: hidden;
