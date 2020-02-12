@@ -1,0 +1,8 @@
+.import-button {
+  background-color: red;
+  color: white;
+}
+
+.video-control-button svg {
+  fill: red;
+}
