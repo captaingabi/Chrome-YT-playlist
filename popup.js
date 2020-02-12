@@ -28,13 +28,17 @@ const updatePlayListDiv = (currentVID, playlist) => {
   );
   playListDiv.appendChild(h1);
   const ul = document.createElement('ul');
+  let currentLI = undefined;
   playlist.videos.forEach(video => {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
     a.innerHTML = video.title;
     a.id = video.id + 'A';
-    if (currentVID === video.id) a.style = 'color:red';
+    if (currentVID === video.id) {
+      a.style = 'color:red';
+      currentLI = li;
+    }
     a.onclick = () => {
       chrome.runtime.sendMessage({ msg: 'play_exact', videoId: video.id });
     };
@@ -42,6 +46,7 @@ const updatePlayListDiv = (currentVID, playlist) => {
     ul.appendChild(li);
   });
   playListDiv.appendChild(ul);
+  if (currentLI) currentLI.scrollIntoView({ behavior: 'auto', block: 'center' });
 };
 
 const updatePlayingInPlaylistDiv = (prevVID, currentVID) => {
