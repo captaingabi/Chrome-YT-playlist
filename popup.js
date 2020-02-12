@@ -21,6 +21,7 @@ const updateRandomDiv = rndVIDs => {
 
 const updatePlayListDiv = (currentVID, playlist) => {
   playListDiv.innerHTML = '';
+  if (!playlist) return;
   const h1 = document.createElement('H1');
   h1.appendChild(
     document.createTextNode(playlist.title + ' (' + playlist.videos.length + ' videos)')
