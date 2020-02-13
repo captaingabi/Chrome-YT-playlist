@@ -25,6 +25,7 @@ const refreshURL = () => {
           },
           tab => {
             runtime.tabId = tab.id;
+            chrome.browserAction.setBadgeText({ text: '' }, () => {});
             chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
             chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
           }
@@ -149,6 +150,7 @@ const importPlaylist = () => {
       runtime.loading = true;
       runtime.currentVID = match[2];
       runtime.tabId = tab.id;
+      chrome.browserAction.setBadgeText({ text: '' }, () => {});
       findFirstVideo(match[3]);
     }
   });
@@ -214,5 +216,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
   if (tabId === runtime.tabId) {
     runtime.tabId = undefined;
+    chrome.browserAction.setBadgeText({ text: '!' }, () => {});
   }
 });
+
+if (!runtime.tabId) chrome.browserAction.setBadgeText({ text: '!' }, () => {});
