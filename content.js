@@ -1,27 +1,27 @@
-const videoElement = document.querySelector('video');
+const video = document.querySelector('video');
+const shortcutIcon = document.querySelectorAll('[rel="shortcut icon"]')[0];
 
-videoElement.addEventListener('ended', event => {
+video.addEventListener('ended', event => {
   chrome.runtime.sendMessage({ msg: 'video_ended' });
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.msg === 'play_pause') {
-    if (request.state === 'Play') videoElement.play();
-    else videoElement.pause();
-    sendResponse({ msg: request.msg, state: videoElement.paused ? 'Play' : 'Pause' });
+  if (request.msg === 'set_paused') {
+    if (request.paused) video.pause();
+    else video.play();
+    sendResponse({ paused: video.paused });
   }
-  if (request.msg === 'get_play_state') {
-    sendResponse({ msg: request.msg, state: videoElement.paused ? 'Play' : 'Pause' });
+  if (request.msg === 'get_paused') {
+    sendResponse({ paused: video.paused });
   }
   if (request.msg === 'set_volume') {
-    videoElement.volume = request.volume;
-    sendResponse({ msg: request.msg, volume: videoElement.volume });
+    video.volume = request.volume;
+    sendResponse({ volume: video.volume });
   }
   if (request.msg === 'get_volume') {
-    sendResponse({ msg: request.msg, volume: videoElement.volume });
+    sendResponse({ volume: video.volume });
   }
   if (request.msg === 'set_icon') {
-    document.querySelectorAll('[rel="shortcut icon"]')[0].href = request.href;
-    sendResponse();
+    shortcutIcon.href = request.href;
   }
 });

@@ -13,39 +13,30 @@ chrome.storage.local.get('playlist', result => {
   if (result) runtime.playlist = result.playlist;
 });
 
-const refreshURL = () => {
-  chrome.runtime.sendMessage(
-    { msg: 'refresh_play_state', state: 'Pause', disabled: true },
-    response => {
-      chrome.runtime.sendMessage({ msg: 'refresh_volume', disabled: true }, response => {
-        chrome.tabs.update(
-          runtime.tabId,
-          {
-            url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
-          },
-          tab => {
-            runtime.tabId = tab.id;
-            chrome.browserAction.setBadgeText({ text: '' }, () => {});
-            chrome.runtime.sendMessage({ msg: 'refresh_playing', runtime });
-            chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
-          }
-        );
-      });
-    }
-  );
+const setTabId = tabId => {
+  runtime.tabId = tabId;
+  if (runtime.tabId) {
+    chrome.tabs.sendMessage(runtime.tabId, {
+      msg: 'set_icon',
+      href: chrome.runtime.getURL('SVG/player.svg')
+    });
+    chrome.browserAction.setBadgeText({ text: '' }, () => {});
+  } else {
+    chrome.browserAction.setBadgeText({ text: '!' }, () => {});
+  }
 };
 
-const refreshVideoState = () => {
-  chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_volume' }, response => {
-    chrome.runtime.sendMessage({ msg: 'refresh_volume', volume: response.volume });
-  });
-  chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
-    chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-  });
-  chrome.tabs.sendMessage(
+const refreshURL = () => {
+  chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: true });
+  chrome.tabs.update(
     runtime.tabId,
-    { msg: 'set_icon', href: chrome.runtime.getURL('SVG/player.svg') },
-    response => {}
+    {
+      url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
+    },
+    tab => {
+      setTabId(tab.id);
+      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+    }
   );
 };
 
@@ -105,8 +96,7 @@ const importPlayistChunk = (playlistId, videoId) => {
         } else {
           if (runtime.loading) {
             runtime.loading = false;
-            chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime });
-            refreshVideoState();
+            chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
           }
           chrome.storage.local.set({ playlist: runtime.playlist }, () => {});
         }
@@ -145,24 +135,42 @@ const importPlaylist = () => {
     const tab = tabs[0];
     const match = tab.url.match(playlistRegExp);
     if (match) {
-      chrome.runtime.sendMessage({ msg: 'playlist_loading', runtime });
+      chrome.runtime.sendMessage({
+        msg: 'no_playlist_present',
+        message: 'Importing playlist. Please wait ...'
+      });
       runtime.playlist = undefined;
       runtime.loading = true;
       runtime.currentVID = match[2];
-      runtime.tabId = tab.id;
-      chrome.browserAction.setBadgeText({ text: '' }, () => {});
+      setTabId(tab.id);
       findFirstVideo(match[3]);
     }
   });
 };
 
-chrome.runtime.onMessage.addListener(request => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.msg === 'get_tab_id') {
+    sendResponse({ tabId: runtime.tabId });
+  }
   if (request.msg === 'import_playlist') {
     importPlaylist(runtime);
   }
-  if (runtime.loading) {
-    chrome.runtime.sendMessage({ msg: 'playlist_loading' });
-  } else if (runtime.playlist) {
+  if (request.msg === 'refresh_request') {
+    if (!runtime.playlist) {
+      sendResponse({
+        msg: 'no_playlist_present',
+        message: 'PLease open a tab with youtube playlist and click import'
+      });
+    } else if (runtime.loading) {
+      sendResponse({
+        msg: 'no_playlist_present',
+        message: 'Importing playlist. Please wait ...'
+      });
+    } else {
+      sendResponse({ msg: 'refresh_response', runtime });
+    }
+  }
+  if (runtime && runtime.playlist) {
     if (request.msg === 'video_ended') {
       if (runtime.rndVIDs) playRandom();
       else playOrder(1);
@@ -177,47 +185,25 @@ chrome.runtime.onMessage.addListener(request => {
     if (request.msg === 'play_exact') {
       playExact(request.videoId);
     }
-    if (request.msg === 'set_volume') {
-      if (runtime.tabId) {
-        chrome.tabs.sendMessage(runtime.tabId, request, response => {
-          chrome.runtime.sendMessage({ msg: 'refresh_volume', volume: response.volume });
-        });
-      }
-    }
-    if (request.msg === 'play_pause') {
-      if (runtime.tabId) {
-        chrome.tabs.sendMessage(runtime.tabId, request, response => {
-          chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
-        });
-      }
-    }
     if (request.msg === 'randomize') {
       runtime.rndVIDs = request.randomize ? runtime.playlist.videos : undefined;
-      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
+      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
     }
-    if (request.msg === 'refresh_request') {
-      chrome.runtime.sendMessage({ msg: 'refresh_playlist', runtime });
-      chrome.runtime.sendMessage({ msg: 'refresh_remaining_video', runtime });
-      if (runtime.tabId) {
-        chrome.tabs.get(runtime.tabId, tab => {
-          if (tab && tab.status === 'complete') refreshVideoState();
-        });
-      }
-    }
-  } else {
-    chrome.runtime.sendMessage({ msg: 'no_playlist_present' });
   }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === runtime.tabId && changeInfo.status === 'complete') refreshVideoState();
+  if (tabId === runtime.tabId && changeInfo.status === 'complete') {
+    setTabId(tabId);
+    chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+    chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: false });
+  }
 });
 
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
   if (tabId === runtime.tabId) {
-    runtime.tabId = undefined;
-    chrome.browserAction.setBadgeText({ text: '!' }, () => {});
+    setTabId(undefined);
   }
 });
 
-if (!runtime.tabId) chrome.browserAction.setBadgeText({ text: '!' }, () => {});
+setTabId(undefined);

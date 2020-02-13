@@ -6,9 +6,9 @@ const volumeInput = document.getElementById('volumeInput');
 const randomInput = document.getElementById('randomInput');
 const randomizeLabel = document.getElementById('randomizeLabel');
 
-const updateRandomDiv = rndVIDs => {
-  if (rndVIDs) {
-    randomizeLabel.innerHTML = `Randomize: ${rndVIDs.length} videos remaining`;
+const updateRandomDiv = runtime => {
+  if (runtime.rndVIDs) {
+    randomizeLabel.innerHTML = `Randomize: ${runtime.rndVIDs.length} videos remaining`;
     randomInput.checked = true;
     previousButton.disabled = true;
   } else {
@@ -18,23 +18,22 @@ const updateRandomDiv = rndVIDs => {
   }
 };
 
-const updatePlayListDiv = (currentVID, playlist) => {
-  playListDiv.innerHTML = '';
-  if (!playlist) return;
+const updatePlayListDiv = runtime => {
   const h1 = document.createElement('H1');
   h1.appendChild(
-    document.createTextNode(playlist.title + ' (' + playlist.videos.length + ' videos)')
+    document.createTextNode(
+      runtime.playlist.title + ' (' + runtime.playlist.videos.length + ' videos)'
+    )
   );
-  playListDiv.appendChild(h1);
   const ul = document.createElement('ul');
   let currentLI = undefined;
-  playlist.videos.forEach(video => {
+  runtime.playlist.videos.forEach(video => {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
     a.innerHTML = video.title;
     a.id = video.id + 'A';
-    if (currentVID === video.id) {
+    if (runtime.currentVID === video.id) {
       a.style = 'color:red';
       currentLI = li;
     }
@@ -44,19 +43,10 @@ const updatePlayListDiv = (currentVID, playlist) => {
     li.appendChild(a);
     ul.appendChild(li);
   });
+  playListDiv.innerHTML = '';
+  playListDiv.appendChild(h1);
   playListDiv.appendChild(ul);
   if (currentLI) currentLI.scrollIntoView({ behavior: 'auto', block: 'center' });
-};
-
-const updatePlayingInPlaylistDiv = (prevVID, currentVID) => {
-  if (prevVID) {
-    const prevA = document.getElementById(prevVID + 'A');
-    prevA.style = 'color:blue';
-  }
-  if (currentVID) {
-    const nowA = document.getElementById(currentVID + 'A');
-    nowA.style = 'color:red';
-  }
 };
 
 const noPlaylistDiv = message => {
@@ -79,21 +69,12 @@ importButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'import_playlist' });
 };
 
-playButton.onclick = event => {
-  chrome.runtime.sendMessage({ msg: 'play_pause', state: playButton.state });
-};
-
 previousButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_prev' });
 };
 
 nextButton.onclick = event => {
   chrome.runtime.sendMessage({ msg: 'play_next' });
-};
-
-volumeInput.oninput = () => {
-  updateVolumeSliderShadow();
-  chrome.runtime.sendMessage({ msg: 'set_volume', volume: volumeInput.value });
 };
 
 randomInput.onclick = event => {
@@ -104,34 +85,76 @@ randomInput.onclick = event => {
   }
 };
 
+playButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
+    if (response && response.tabId) {
+      chrome.tabs.sendMessage(
+        response.tabId,
+        { msg: 'set_paused', paused: playButton.className === 'pause-button' ? true : false },
+        response => {
+          playButton.className = response.paused ? 'play-button' : 'pause-button';
+        }
+      );
+    }
+  });
+};
+
+volumeInput.oninput = () => {
+  updateVolumeSliderShadow();
+  chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
+    if (response && response.tabId) {
+      chrome.tabs.sendMessage(
+        response.tabId,
+        { msg: 'set_volume', volume: volumeInput.value },
+        response => {
+          volumeInput.value = response.volume;
+          updateVolumeSliderShadow();
+        }
+      );
+    }
+  });
+};
+
+const updatePlayer = () => {
+  chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
+    if (response && response.tabId) {
+      chrome.tabs.get(response.tabId, tab => {
+        if (tab && tab.status === 'complete') {
+          chrome.tabs.sendMessage(response.tabId, { msg: 'get_paused' }, response => {
+            playButton.className = response.paused ? 'play-button' : 'pause-button';
+          });
+          chrome.tabs.sendMessage(response.tabId, { msg: 'get_volume' }, response => {
+            volumeInput.value = response.volume;
+            updateVolumeSliderShadow();
+          });
+        }
+      });
+    }
+  });
+};
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.msg === 'refresh_playlist') {
-    updatePlayListDiv(request.runtime.currentVID, request.runtime.playlist);
-  }
-  if (request.msg === 'refresh_playing') {
-    updatePlayingInPlaylistDiv(request.runtime.prevVID, request.runtime.currentVID);
-  }
-  if (request.msg === 'refresh_remaining_video') {
-    updateRandomDiv(request.runtime.rndVIDs);
-  }
-  if (request.msg === 'refresh_play_state') {
-    playButton.disabled = request.disabled ? true : false;
-    playButton.state = request.state;
-    playButton.className = playButton.state === 'Play' ? 'play-button' : 'pause-button';
-    sendResponse();
-  }
-  if (request.msg === 'refresh_volume') {
-    volumeInput.disabled = request.disabled ? true : false;
-    if (request.volume) volumeInput.value = request.volume;
-    sendResponse();
-    updateVolumeSliderShadow();
-  }
   if (request.msg === 'no_playlist_present') {
-    noPlaylistDiv('PLease open a tab with youtube playlist and click import');
+    noPlaylistDiv(request.message);
   }
-  if (request.msg === 'playlist_loading') {
-    noPlaylistDiv('Importing playlist. Please wait ...');
+  if (request.msg === 'refresh_trigger') {
+    updatePlayListDiv(request.runtime);
+    updateRandomDiv(request.runtime);
+    updatePlayer();
+  }
+  if (request.msg === 'disable_enable_player') {
+    playButton.disabled = request.disabled;
+    volumeInput.disabled = request.disabled;
   }
 });
 
-chrome.runtime.sendMessage({ msg: 'refresh_request' });
+chrome.runtime.sendMessage({ msg: 'refresh_request' }, response => {
+  if (response.msg === 'no_playlist_present') {
+    noPlaylistDiv(response.message);
+  }
+  if (response.msg === 'refresh_response') {
+    updatePlayListDiv(response.runtime);
+    updateRandomDiv(response.runtime);
+    updatePlayer();
+  }
+});
