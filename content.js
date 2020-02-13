@@ -20,4 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'get_volume') {
     sendResponse({ msg: request.msg, volume: videoElement.volume });
   }
+  if (request.msg === 'set_icon') {
+    document.querySelectorAll('[rel="shortcut icon"]')[0].href = request.href;
+    sendResponse();
+  }
 });

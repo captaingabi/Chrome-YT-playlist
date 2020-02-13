@@ -41,6 +41,11 @@ const refreshVideoState = () => {
   chrome.tabs.sendMessage(runtime.tabId, { msg: 'get_play_state' }, response => {
     chrome.runtime.sendMessage({ msg: 'refresh_play_state', state: response.state });
   });
+  chrome.tabs.sendMessage(
+    runtime.tabId,
+    { msg: 'set_icon', href: chrome.runtime.getURL('SVG/player.svg') },
+    response => {}
+  );
 };
 
 const playRandom = () => {
