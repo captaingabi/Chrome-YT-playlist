@@ -156,15 +156,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     importPlaylist(runtime);
   }
   if (request.msg === 'refresh_request') {
-    if (!runtime.playlist) {
-      sendResponse({
-        msg: 'no_playlist_present',
-        message: 'PLease open a tab with youtube playlist and click import'
-      });
-    } else if (runtime.loading) {
+    if (runtime.loading) {
       sendResponse({
         msg: 'no_playlist_present',
         message: 'Importing playlist. Please wait ...'
+      });
+    } else if (!runtime.playlist) {
+      sendResponse({
+        msg: 'no_playlist_present',
+        message: 'PLease open a tab with youtube playlist and click import'
       });
     } else {
       sendResponse({ msg: 'refresh_response', runtime });

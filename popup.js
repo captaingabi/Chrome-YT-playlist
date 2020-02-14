@@ -6,16 +6,11 @@ const volumeInput = document.getElementById('volumeInput');
 const randomInput = document.getElementById('randomInput');
 const randomizeLabel = document.getElementById('randomizeLabel');
 
-const updateRandomDiv = runtime => {
-  if (runtime.rndVIDs) {
-    randomizeLabel.innerHTML = `Randomize: ${runtime.rndVIDs.length} videos remaining`;
-    randomInput.checked = true;
-    previousButton.disabled = true;
-  } else {
-    randomizeLabel.innerHTML = 'Randomize';
-    randomInput.checked = false;
-    previousButton.disabled = false;
-  }
+const noPlaylistDiv = message => {
+  playListDiv.innerHTML = '';
+  const h1 = document.createElement('H1');
+  h1.appendChild(document.createTextNode(message));
+  playListDiv.appendChild(h1);
 };
 
 const updatePlayListDiv = runtime => {
@@ -49,11 +44,16 @@ const updatePlayListDiv = runtime => {
   if (currentLI) currentLI.scrollIntoView({ behavior: 'auto', block: 'center' });
 };
 
-const noPlaylistDiv = message => {
-  playListDiv.innerHTML = '';
-  const h1 = document.createElement('H1');
-  h1.appendChild(document.createTextNode(message));
-  playListDiv.appendChild(h1);
+const updateRandomDiv = runtime => {
+  if (runtime.rndVIDs) {
+    randomizeLabel.innerHTML = `Randomize: ${runtime.rndVIDs.length} videos remaining`;
+    randomInput.checked = true;
+    previousButton.disabled = true;
+  } else {
+    randomizeLabel.innerHTML = 'Randomize';
+    randomInput.checked = false;
+    previousButton.disabled = false;
+  }
 };
 
 const updateVolumeSliderShadow = () => {
@@ -65,24 +65,22 @@ const updateVolumeSliderShadow = () => {
     '%, #ccc 100%)';
 };
 
-importButton.onclick = event => {
-  chrome.runtime.sendMessage({ msg: 'import_playlist' });
-};
-
-previousButton.onclick = event => {
-  chrome.runtime.sendMessage({ msg: 'play_prev' });
-};
-
-nextButton.onclick = event => {
-  chrome.runtime.sendMessage({ msg: 'play_next' });
-};
-
-randomInput.onclick = event => {
-  if (event.target.checked) {
-    chrome.runtime.sendMessage({ msg: 'randomize', randomize: true });
-  } else {
-    chrome.runtime.sendMessage({ msg: 'randomize', randomize: false });
-  }
+const updatePlayer = () => {
+  chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
+    if (response && response.tabId) {
+      chrome.tabs.get(response.tabId, tab => {
+        if (tab && tab.status === 'complete') {
+          chrome.tabs.sendMessage(response.tabId, { msg: 'get_paused' }, response => {
+            playButton.className = response.paused ? 'play-button' : 'pause-button';
+          });
+          chrome.tabs.sendMessage(response.tabId, { msg: 'get_volume' }, response => {
+            volumeInput.value = response.volume;
+            updateVolumeSliderShadow();
+          });
+        }
+      });
+    }
+  });
 };
 
 playButton.onclick = event => {
@@ -115,22 +113,24 @@ volumeInput.oninput = () => {
   });
 };
 
-const updatePlayer = () => {
-  chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
-    if (response && response.tabId) {
-      chrome.tabs.get(response.tabId, tab => {
-        if (tab && tab.status === 'complete') {
-          chrome.tabs.sendMessage(response.tabId, { msg: 'get_paused' }, response => {
-            playButton.className = response.paused ? 'play-button' : 'pause-button';
-          });
-          chrome.tabs.sendMessage(response.tabId, { msg: 'get_volume' }, response => {
-            volumeInput.value = response.volume;
-            updateVolumeSliderShadow();
-          });
-        }
-      });
-    }
-  });
+importButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'import_playlist' });
+};
+
+previousButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'play_prev' });
+};
+
+nextButton.onclick = event => {
+  chrome.runtime.sendMessage({ msg: 'play_next' });
+};
+
+randomInput.onclick = event => {
+  if (event.target.checked) {
+    chrome.runtime.sendMessage({ msg: 'randomize', randomize: true });
+  } else {
+    chrome.runtime.sendMessage({ msg: 'randomize', randomize: false });
+  }
 };
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
