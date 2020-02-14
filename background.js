@@ -193,10 +193,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === runtime.tabId && changeInfo.status === 'complete') {
-    setTabId(tabId);
-    chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
-    chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: false });
+  if (tabId === runtime.tabId) {
+    if (tab.url.match(playlistRegExp)) {
+      if (changeInfo.status === 'complete') {
+        setTabId(tabId);
+        chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+        chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: false });
+      }
+    } else {
+      setTabId(undefined);
+    }
   }
 });
 
