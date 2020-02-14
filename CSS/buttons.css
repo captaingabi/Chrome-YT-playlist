@@ -14,6 +14,14 @@
   width: 30px;
 }
 
+.play-button:disabled {
+  background: url(../SVG/play_gray.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
 .next-button {
   background: url(../SVG/next.svg) no-repeat top left;
   background-size: contain;
@@ -24,6 +32,14 @@
 
 .pause-button {
   background: url(../SVG/pause.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
+.pause-button:disabled {
+  background: url(../SVG/pause_gray.svg) no-repeat top left;
   background-size: contain;
   display: inline-block;
   height: 30px;

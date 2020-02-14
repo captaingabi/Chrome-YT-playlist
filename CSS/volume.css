@@ -25,3 +25,8 @@
   background: red;
   cursor: pointer;
 }
+
+.volume-slider:disabled::-webkit-slider-thumb {
+  background: gray;
+  cursor: auto;
+}

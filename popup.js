@@ -56,13 +56,11 @@ const updateRandomDiv = runtime => {
   }
 };
 
-const updateVolumeSliderShadow = () => {
+const updateVolumeSliderShadow = (beginColor, endColor) => {
   volumeInput.style.background =
-    'linear-gradient(to right, #ff8080 0%, #ff8080 ' +
-    volumeInput.value * 100 +
-    '%, #ccc ' +
-    volumeInput.value * 100 +
-    '%, #ccc 100%)';
+    'linear-gradient(to right, ' +
+    `#${beginColor} 0%, #${beginColor} ${volumeInput.value * 100}%, ` +
+    `#${endColor} ${volumeInput.value * 100}%, #${endColor} 100%)`;
 };
 
 const updatePlayer = () => {
@@ -75,7 +73,7 @@ const updatePlayer = () => {
           });
           chrome.tabs.sendMessage(response.tabId, { msg: 'get_volume' }, response => {
             volumeInput.value = response.volume;
-            updateVolumeSliderShadow();
+            updateVolumeSliderShadow('ff8080', 'ccc');
           });
         }
       });
@@ -98,7 +96,7 @@ playButton.onclick = event => {
 };
 
 volumeInput.oninput = () => {
-  updateVolumeSliderShadow();
+  updateVolumeSliderShadow('ff8080', 'ccc');
   chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
     if (response && response.tabId) {
       chrome.tabs.sendMessage(
@@ -106,7 +104,7 @@ volumeInput.oninput = () => {
         { msg: 'set_volume', volume: volumeInput.value },
         response => {
           volumeInput.value = response.volume;
-          updateVolumeSliderShadow();
+          updateVolumeSliderShadow('ff8080', 'ccc');
         }
       );
     }
@@ -145,6 +143,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'disable_enable_player') {
     playButton.disabled = request.disabled;
     volumeInput.disabled = request.disabled;
+    if (volumeInput.disabled) updateVolumeSliderShadow('888', 'ccc');
+    else updateVolumeSliderShadow('ff8080', 'ccc');
   }
 });
 
