@@ -4,7 +4,8 @@ let runtime = {
   currentVID: undefined,
   prevVID: undefined,
   rndVIDs: undefined,
-  loading: false
+  loading: false,
+  refreshing: false
 };
 const playlistRegExp = /(https?:\/\/www.youtube.com\/watch\?v=(.{11})&list=(.*))&?/;
 const playlistHTMLRegExp = /window\["ytInitialData"\] = (.*);\n/;
@@ -27,7 +28,7 @@ const setTabId = tabId => {
 };
 
 const refreshURL = () => {
-  chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: true });
+  runtime.refreshing = true;
   chrome.tabs.update(
     runtime.tabId,
     {
@@ -197,8 +198,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (tab.url.match(playlistRegExp)) {
       if (changeInfo.status === 'complete') {
         setTabId(tabId);
+        runtime.refreshing = false;
         chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
-        chrome.runtime.sendMessage({ msg: 'disable_enable_player', disabled: false });
       }
     } else {
       setTabId(undefined);

@@ -63,7 +63,16 @@ const updateVolumeSliderShadow = (beginColor, endColor) => {
     `#${endColor} ${volumeInput.value * 100}%, #${endColor} 100%)`;
 };
 
-const updatePlayer = () => {
+const updatePlayer = runtime => {
+  if (runtime.refreshing) {
+    playButton.disabled = true;
+    volumeInput.disabled = true;
+    updateVolumeSliderShadow('888', 'ccc');
+  } else {
+    playButton.disabled = false;
+    volumeInput.disabled = false;
+    updateVolumeSliderShadow('ff8080', 'ccc');
+  }
   chrome.runtime.sendMessage({ msg: 'get_tab_id' }, response => {
     if (response && response.tabId) {
       chrome.tabs.get(response.tabId, tab => {
@@ -138,13 +147,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.msg === 'refresh_trigger') {
     updatePlayListDiv(request.runtime);
     updateRandomDiv(request.runtime);
-    updatePlayer();
-  }
-  if (request.msg === 'disable_enable_player') {
-    playButton.disabled = request.disabled;
-    volumeInput.disabled = request.disabled;
-    if (volumeInput.disabled) updateVolumeSliderShadow('888', 'ccc');
-    else updateVolumeSliderShadow('ff8080', 'ccc');
+    updatePlayer(request.runtime);
   }
 });
 
@@ -155,6 +158,6 @@ chrome.runtime.sendMessage({ msg: 'refresh_request' }, response => {
   if (response.msg === 'refresh_response') {
     updatePlayListDiv(response.runtime);
     updateRandomDiv(response.runtime);
-    updatePlayer();
+    updatePlayer(response.runtime);
   }
 });
