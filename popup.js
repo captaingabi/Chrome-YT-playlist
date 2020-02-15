@@ -36,6 +36,61 @@ const updatePlayListDiv = runtime => {
       chrome.runtime.sendMessage({ msg: 'play_exact', videoId: video.id });
     };
     li.appendChild(a);
+    li.addEventListener(
+      'dragstart',
+      event => {
+        event.target.style.opacity = '0.4';
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/html', event.target.id);
+      },
+      false
+    );
+    li.addEventListener(
+      'dragend',
+      event => {
+        event.target.style.opacity = '1';
+      },
+      false
+    );
+    li.addEventListener(
+      'dragover',
+      event => {
+        if (event.preventDefault) {
+          event.preventDefault();
+        }
+        event.dataTransfer.dropEffect = 'move';
+      },
+      false
+    );
+    li.addEventListener(
+      'dragenter',
+      event => {
+        event.target.style.textDecoration = 'overline';
+      },
+      false
+    );
+    li.addEventListener(
+      'dragleave',
+      event => {
+        event.target.style.textDecoration = null;
+      },
+      false
+    );
+    li.addEventListener(
+      'drop',
+      event => {
+        if (event.stopPropagation) {
+          event.stopPropagation();
+        }
+        chrome.runtime.sendMessage({
+          msg: 'move_video_in_playlist',
+          src: event.dataTransfer.getData('text/html').slice(0, -1),
+          dst: event.target.id.slice(0, -1)
+        });
+        return false;
+      },
+      false
+    );
     ul.appendChild(li);
   });
   playListDiv.innerHTML = '';

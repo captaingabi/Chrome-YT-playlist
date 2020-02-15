@@ -9,3 +9,7 @@ li {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+a:link {
+  text-decoration: none;
+}

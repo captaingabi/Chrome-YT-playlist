@@ -27,6 +27,19 @@ const setTabId = tabId => {
   }
 };
 
+const moveVideoInList = (srcVideoId, dstVideoId) => {
+  const srcVideo = runtime.playlist.videos.find(video => video.id === srcVideoId);
+  runtime.playlist.videos = runtime.playlist.videos.reduce((result, video) => {
+    if (video.id === srcVideoId);
+    else if (video.id === dstVideoId) {
+      result.push(srcVideo);
+      result.push(video);
+    } else result.push(video);
+    return result;
+  }, []);
+  chrome.storage.local.set({ playlist: runtime.playlist }, () => {});
+};
+
 const refreshURL = () => {
   runtime.refreshing = true;
   chrome.tabs.update(
@@ -193,6 +206,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     if (request.msg === 'randomize') {
       runtime.rndVIDs = request.randomize ? runtime.playlist.videos : undefined;
+      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+    }
+    if (request.msg === 'move_video_in_playlist') {
+      moveVideoInList(request.src, request.dst);
       chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
     }
   }
