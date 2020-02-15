@@ -11,5 +11,16 @@ li {
 }
 
 a:link {
+  color: blue;
+  text-decoration: none;
+}
+
+a:visited {
+  color: blue;
+  text-decoration: none;
+}
+
+a:hover {
+  color: orange;
   text-decoration: none;
 }
