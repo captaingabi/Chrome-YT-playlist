@@ -6,6 +6,14 @@
   width: 30px;
 }
 
+.previous-button:disabled {
+  background: url(../SVG/previous_gray.svg) no-repeat top left;
+  background-size: contain;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+}
+
 .play-button {
   background: url(../SVG/play.svg) no-repeat top left;
   background-size: contain;
