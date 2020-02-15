@@ -172,6 +172,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
   if (runtime && runtime.playlist) {
+    if (request.msg === 'video_loaded') {
+      setTabId(sender.tab.id);
+      runtime.refreshing = false;
+      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+    }
     if (request.msg === 'video_ended') {
       if (runtime.rndVIDs) playRandom();
       else playOrder(1);
@@ -195,13 +200,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (tabId === runtime.tabId) {
-    if (tab.url.match(playlistRegExp)) {
-      if (changeInfo.status === 'complete') {
-        setTabId(tabId);
-        runtime.refreshing = false;
-        chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
-      }
-    } else {
+    if (!tab.url.match(playlistRegExp)) {
       setTabId(undefined);
     }
   }
