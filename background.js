@@ -28,6 +28,7 @@ const setTabId = tabId => {
 };
 
 const moveVideoInList = (srcVideoId, dstVideoId) => {
+  if (srcVideoId === dstVideoId) return;
   const srcVideo = runtime.playlist.videos.find(video => video.id === srcVideoId);
   runtime.playlist.videos = runtime.playlist.videos.reduce((result, video) => {
     if (video.id === srcVideoId);
