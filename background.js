@@ -43,16 +43,28 @@ const moveVideoInList = (srcVideoId, dstVideoId) => {
 
 const refreshURL = () => {
   runtime.refreshing = true;
-  chrome.tabs.update(
-    runtime.tabId,
-    {
-      url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
-    },
-    tab => {
-      setTabId(tab.id);
-      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
-    }
-  );
+  if (runtime.tabId) {
+    chrome.tabs.update(
+      runtime.tabId,
+      {
+        url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
+      },
+      tab => {
+        setTabId(tab.id);
+        chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+      }
+    );
+  } else {
+    chrome.tabs.create(
+      {
+        url: `https://www.youtube.com/watch?v=${runtime.currentVID}&list=${runtime.playlist.id}`
+      },
+      tab => {
+        setTabId(tab.id);
+        chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+      }
+    );
+  }
 };
 
 const playRandom = () => {
@@ -187,13 +199,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (runtime && runtime.playlist) {
     if (request.msg === 'video_loaded') {
-      setTabId(sender.tab.id);
-      runtime.refreshing = false;
-      chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+      if (runtime.tabId === sender.tab.id) {
+        setTabId(sender.tab.id);
+        runtime.refreshing = false;
+        chrome.runtime.sendMessage({ msg: 'refresh_trigger', runtime });
+      }
     }
     if (request.msg === 'video_ended') {
-      if (runtime.rndVIDs) playRandom();
-      else playOrder(1);
+      if (runtime.tabId === sender.tab.id) {
+        if (runtime.rndVIDs) playRandom();
+        else playOrder(1);
+      }
     }
     if (request.msg === 'play_next') {
       if (runtime.rndVIDs) playRandom();

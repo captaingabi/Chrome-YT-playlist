@@ -1,6 +1,6 @@
 {
   "name": "Youtube enchanted playlist",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "A leightweight yourube playlist handler",
   "permissions": ["activeTab", "declarativeContent", "storage", "tabs", "unlimitedStorage"],
   "background": {
